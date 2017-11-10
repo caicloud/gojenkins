@@ -223,37 +223,34 @@ func (b *Build) GetConsoleOutput() string {
 	return content
 }
 
-// GetProgressiveText gets progressive text with the param in previous response header.
+// GetProgressiveText gets progressive text with response header `X-Text-Size` of previous request.
 func (b *Build) GetProgressiveText(start int64) (string, string, error) {
-	startStr := strconv.FormatInt(start, 10)
-	url := b.Base + "/logText/progressiveText" // "/logText/progressiveHtml"
+	url := b.Base + "/logText/progressiveText"
 
-	var content string
-	querymap := make(map[string]string)
-	querymap["start"] = startStr
-
-	responese, err := b.Jenkins.Requester.Get(url, &content, querymap)
-	if err != nil {
-		return "", "", err
-	}
-	textSize := responese.Header.Get("X-Text-Size")
-	return content, textSize, nil
+	return getProgressiveLog(start, url)
 }
 
-// GetProgressiveHTML gets progressive html with the param in previous response header.
+// GetProgressiveHTML gets progressive html with response header `X-Text-Size` of previous request.
 func (b *Build) GetProgressiveHTML(start int64) (string, string, error) {
-	startStr := strconv.FormatInt(start, 10)
 	url := b.Base + "/logText/progressiveHtml"
 
-	var content string
-	querymap := make(map[string]string)
-	querymap["start"] = startStr
+	return getProgressiveLog(start, url)
+}
 
-	responese, err := b.Jenkins.Requester.Get(url, &content, querymap)
+func getProgressiveLog(start int64, url string) (string, string, error) {
+	startStr := strconv.FormatInt(start, 10)
+
+	var content string
+	queryMap := make(map[string]string)
+	queryMap["start"] = startStr
+
+	response, err := b.Jenkins.Requester.Get(url, &content, queryMap)
 	if err != nil {
 		return "", "", err
 	}
-	textSize := responese.Header.Get("X-Text-Size")
+	// The textSize is the length of the log we get,
+	// we can use it as next start so that we can get progressive log without repeat.
+	textSize := response.Header.Get("X-Text-Size")
 	return content, textSize, nil
 }
 
